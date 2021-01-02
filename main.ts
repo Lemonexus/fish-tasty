@@ -3,41 +3,97 @@ namespace SpriteKind {
     export const SwimmingFish = SpriteKind.create()
     export const CaughtFish = SpriteKind.create()
 }
-
-let lure = sprites.create(img`
-. . . . . . . . . . . . . . . . 
-. . . . . . . . . . . . . . . . 
-. . . . . . . . . . . . . . . . 
-. . . . . . . . . . . . . . . . 
-. . . . . . . . . . . . . . . . 
-. . . . . . . . . . . . . . . . 
-. . . . . . . . . . . . . . . . 
-. . . . . . . . . . . . . . . . 
-. . . . . . . . . . . . . . . . 
-. . . . . . . . . . . . . . . . 
-. . . . . . . . . . . . . . . . 
-. . . . . . . . . . . . . . . . 
-. . . . . . . . . . . . . . . . 
-. . . . . . . . . . . . . . . . 
-. . . . . . . . . . . . . . . . 
-. . . . . . . . . . . . . . . . 
-`, SpriteKind.Player)
-
-function introSequence(){
+function introSequence () {
     pause(2000)
     scene.cameraFollowSprite(lure)
     lure.setVelocity(0, 50)
-    story.queueStoryPart(function(){
+    story.queueStoryPart(function () {
         story.spriteMoveToLocation(lure, 80, 179.66, 100)
     })
-    story.queueStoryPart(function() {
+    story.queueStoryPart(function () {
         lure.setImage(lureImg)
         lure.startEffect(effects.bubbles, 500)
         lure.setVelocity(0, 50)
         controller.moveSprite(lure, 200, 0)
+        canReel = true
     })
 }
+controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
+    if (canReel) {
+        lure.setVelocity(0, -100)
+    }
+})
+function spawnFish (numFish: number) {
+    for (let index = 0; index < numFish; index++) {
+        randomFishIndex = randint(0, fishImgs.length - 1)
+        newFish = sprites.create(fishImgs[randomFishIndex], SpriteKind.SwimmingFish)
+        tiles.placeOnRandomTile(newFish, myTiles.tile4)
+        newFish.setFlag(SpriteFlag.BounceOnWall, true)
 
+        let direction = randint(0, 1)
+        // Swimming right
+        if (direction == 0){
+            newFish.setVelocity(randint(10, 50), 0)
+        }
+        // Swimming left
+        else{
+            newFish.setVelocity(randint(-50, -10), 0)
+        }
+
+        // Store left and right images
+        let rightImg = fishImgs[randomFishIndex]
+        let leftImg = rightImg.clone()
+        leftImg.flipX()
+
+        sprites.setDataImage(newFish, "swim-right", rightImg)
+        sprites.setDataImage(newFish, "swim-left", leftImg)
+
+        //Store fishPoints
+        sprites.setDataNumber(newFish, "points", fishPoints[randomFishIndex])
+    }
+}
+
+game.onUpdate(function() {
+    let allSwimming = sprites.allOfKind(SpriteKind.SwimmingFish) 
+
+    for (let fish of allSwimming){
+        //swimming right
+        if(fish.vx > 0){
+            let rightImg = sprites.readDataImage(fish, "swim-right")
+            fish.setImage(rightImg)
+        }
+    // swimming left
+    else{
+            let leftImg = sprites.readDataImage(fish, "swim-left")
+            fish.setImage(leftImg)
+        }
+    }
+})
+
+let newFish: Sprite = null
+let randomFishIndex = 0
+let canReel = false
+let lureImg: Image = null
+let fishImgs: Image[] = []
+let lure: Sprite = null
+lure = sprites.create(img`
+    . . . . . . . . . . . . . . . . 
+    . . . . . . . . . . . . . . . . 
+    . . . . . . . . . . . . . . . . 
+    . . . . . . . . . . . . . . . . 
+    . . . . . . . . . . . . . . . . 
+    . . . . . . . . . . . . . . . . 
+    . . . . . . . . . . . . . . . . 
+    . . . . . . . . . . . . . . . . 
+    . . . . . . . . . . . . . . . . 
+    . . . . . . . . . . . . . . . . 
+    . . . . . . . . . . . . . . . . 
+    . . . . . . . . . . . . . . . . 
+    . . . . . . . . . . . . . . . . 
+    . . . . . . . . . . . . . . . . 
+    . . . . . . . . . . . . . . . . 
+    . . . . . . . . . . . . . . . . 
+    `, SpriteKind.Player)
 let titleScreen = sprites.create(img`
     ................................................................................................................................................................
     ................................................................................................................................................................
@@ -159,7 +215,7 @@ let titleScreen = sprites.create(img`
     .............................4444444............................................................................................................................
     ................................................................................................................................................................
     ................................................................................................................................................................
-`, SpriteKind.Player)
+    `, SpriteKind.Player)
 scene.setBackgroundImage(img`
     6666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666
     6666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666
@@ -281,7 +337,7 @@ scene.setBackgroundImage(img`
     bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
     bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
     bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-`)
+    `)
 tiles.setTilemap(tilemap`level_0`)
 let fishingCat = sprites.create(img`
     4......848..........eeee
@@ -302,7 +358,7 @@ let fishingCat = sprites.create(img`
     ..422222222.............
     `, SpriteKind.Player)
 tiles.placeOnTile(fishingCat, tiles.getTileLocation(0, 9))
-let fishImgs = [
+fishImgs = [
 img`
     ..................
     ..................
@@ -524,7 +580,7 @@ let fishPoints = [
 1,
 1
 ]
-let lureImg = img`
+lureImg = img`
     . . c . . c . . 
     . . c . c c c . 
     . . c . . c . . 
@@ -534,5 +590,5 @@ let lureImg = img`
     . 2 2 c . c . . 
     . . . . c . . . 
     `
-
 introSequence()
+spawnFish(20)
