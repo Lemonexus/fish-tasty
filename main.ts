@@ -4,6 +4,9 @@ namespace SpriteKind {
     export const CaughtFish = SpriteKind.create()
 }
 function introSequence () {
+    let introMessage = `help the cat catch some fish lol. hopefully the fish is not poison e`
+
+    game.showLongText(introMessage, DialogLayout.Full)
     pause(2000)
     scene.cameraFollowSprite(lure)
     lure.setVelocity(0, 50)
@@ -18,10 +21,49 @@ function introSequence () {
         canReel = true
     })
 }
+scene.onOverlapTile(SpriteKind.CatchingLure, myTiles.transparency16, function (sprite, location) {
+    sprite.vy = 0
+    checkCatch()
+})
+
+function checkCatch(){
+    lure.destroy()
+    let allCaught = sprites.allOfKind(SpriteKind.CaughtFish)
+
+    let sum = 0
+    for (let fish of allCaught){
+        sum += sprites.readDataNumber(fish, "points")
+
+        story.queueStoryPart(function() {
+            story.spriteMoveToLocation(fish, 80, 150, 50)           
+        })
+        story.queueStoryPart(function() {
+            fish.say("" + sprites.readDataNumber(fish, "points"))
+        })
+        story.queueStoryPart(function() {
+            pause(1000)
+            fish.destroy()
+        })
+    }
+
+    info.setScore(sum)
+
+    if (sum ==0){
+        game.over()
+    }
+    else{
+        game.over(true)
+    }
+}    
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
     if (canReel) {
         lure.setVelocity(0, -100)
+        lure.setKind(SpriteKind.CatchingLure)
     }
+})
+sprites.onOverlap(SpriteKind.CatchingLure, SpriteKind.SwimmingFish, function (player2, fish) {
+    fish.follow(player2, 100)
+    fish.setKind(SpriteKind.CaughtFish)
 })
 function spawnFish (numFish: number) {
     for (let index = 0; index < numFish; index++) {
@@ -29,53 +71,37 @@ function spawnFish (numFish: number) {
         newFish = sprites.create(fishImgs[randomFishIndex], SpriteKind.SwimmingFish)
         tiles.placeOnRandomTile(newFish, myTiles.tile4)
         newFish.setFlag(SpriteFlag.BounceOnWall, true)
-
-        let direction = randint(0, 1)
+        direction = randint(0, 1)
         // Swimming right
-        if (direction == 0){
-            newFish.setVelocity(randint(10, 50), 0)
-        }
         // Swimming left
-        else{
+        if (direction == 0) {
+            newFish.setVelocity(randint(10, 50), 0)
+        } else {
             newFish.setVelocity(randint(-50, -10), 0)
         }
-
         // Store left and right images
-        let rightImg = fishImgs[randomFishIndex]
-        let leftImg = rightImg.clone()
+        rightImg = fishImgs[randomFishIndex]
+        leftImg = rightImg.clone()
         leftImg.flipX()
-
         sprites.setDataImage(newFish, "swim-right", rightImg)
-        sprites.setDataImage(newFish, "swim-left", leftImg)
-
-        //Store fishPoints
+sprites.setDataImage(newFish, "swim-left", leftImg)
+// Store fishPoints
         sprites.setDataNumber(newFish, "points", fishPoints[randomFishIndex])
     }
 }
-
-game.onUpdate(function() {
-    let allSwimming = sprites.allOfKind(SpriteKind.SwimmingFish) 
-
-    for (let fish of allSwimming){
-        //swimming right
-        if(fish.vx > 0){
-            let rightImg = sprites.readDataImage(fish, "swim-right")
-            fish.setImage(rightImg)
-        }
-    // swimming left
-    else{
-            let leftImg = sprites.readDataImage(fish, "swim-left")
-            fish.setImage(leftImg)
-        }
-    }
-})
-
-let newFish: Sprite = null
+let leftImg2: Image = null
+let rightImg2: Image = null
+let allSwimming: Sprite[] = []
+let direction = 0
 let randomFishIndex = 0
 let canReel = false
 let lureImg: Image = null
+let fishPoints: number[] = []
 let fishImgs: Image[] = []
 let lure: Sprite = null
+let newFish: Sprite = null
+let rightImg: Image = null
+let leftImg: Image = null
 lure = sprites.create(img`
     . . . . . . . . . . . . . . . . 
     . . . . . . . . . . . . . . . . 
@@ -570,7 +596,7 @@ img`
     ........................................
     `
 ]
-let fishPoints = [
+fishPoints = [
 5,
 10,
 20,
@@ -592,3 +618,17 @@ lureImg = img`
     `
 introSequence()
 spawnFish(20)
+game.onUpdate(function () {
+    allSwimming = sprites.allOfKind(SpriteKind.SwimmingFish)
+    for (let fish of allSwimming) {
+        // swimming right
+        // swimming left
+        if (fish.vx > 0) {
+            rightImg2 = sprites.readDataImage(fish, "swim-right")
+            fish.setImage(rightImg2)
+        } else {
+            leftImg2 = sprites.readDataImage(fish, "swim-left")
+            fish.setImage(leftImg2)
+        }
+    }
+})
